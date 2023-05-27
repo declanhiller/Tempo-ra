@@ -1,0 +1,11 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
+    <ui:VisualElement name="moveToolRoot">
+        <ui:VisualElement style="align-items: stretch;">
+            <ui:Label text="Move Behavior" display-tooltip-when-elided="true" style="align-items: stretch; width: 100%; -unity-text-align: middle-center; height: 20px;" />
+        </ui:VisualElement>
+        <ui:VisualElement name="moveType" style="flex-direction: row; justify-content: space-around;">
+            <ui:Button text="Snap To Grid" display-tooltip-when-elided="true" name="snap" style="width: 40%; padding-left: 0; padding-right: 0;" />
+            <ui:Button text="Free Move" display-tooltip-when-elided="true" name="free" style="width: 40%; padding-left: 0; padding-right: 0;" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

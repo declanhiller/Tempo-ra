@@ -1,0 +1,21 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
+    <ui:VisualElement name="moveToolRoot">
+        <ui:VisualElement name="container">
+            <ui:VisualElement style="flex-direction: row;">
+                <ui:Label text="Position" display-tooltip-when-elided="true" enable-rich-text="false" style="justify-content: flex-start; align-items: center; width: 100%; -unity-text-align: middle-center; height: 20px;" />
+            </ui:VisualElement>
+            <ui:VisualElement name="position" style="flex-direction: row; justify-content: center;">
+                <uie:FloatField label="X" value="42.2" name="xField" style="width: auto;" />
+                <uie:FloatField label="Y" value="42.2" name="yField" style="width: auto;" />
+                <uie:FloatField label="Z" value="42.2" name="zField" style="width: auto;" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:VisualElement style="align-items: stretch;">
+            <ui:Label text="Move Behavior" display-tooltip-when-elided="true" style="align-items: stretch; width: 100%; -unity-text-align: middle-center; height: 20px;" />
+        </ui:VisualElement>
+        <ui:VisualElement name="moveType" style="flex-direction: row; justify-content: space-around;">
+            <ui:Button text="Snap To Grid" display-tooltip-when-elided="true" name="snap" style="width: 40%; padding-left: 0; padding-right: 0;" />
+            <ui:Button text="Free Move" display-tooltip-when-elided="true" name="free" style="width: 40%; padding-left: 0; padding-right: 0;" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>
