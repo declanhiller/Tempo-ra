@@ -14,6 +14,8 @@ namespace PathCreator {
 
         public int Count => points.Count;
 
+        [SerializeField] private int resolution;
+
         public float Length {
             get {
                 float totalDist = 0;
