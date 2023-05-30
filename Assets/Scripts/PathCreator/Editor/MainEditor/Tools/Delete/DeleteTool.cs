@@ -13,8 +13,6 @@ namespace PathCreator.Editor.MainEditor.Tools.Delete {
 
         public static bool IsActive;
 
-        private PathData _pathData;
-
         private PathPoint _hoveringOverPoint;
     
         private Dictionary<PathPoint, int> _controlIds;
@@ -40,14 +38,6 @@ namespace PathCreator.Editor.MainEditor.Tools.Delete {
             }
         }
 
-        private void OnEnable() {
-            _pathData = new PathData((Path) target, FindObjectOfType<Grid2D>());
-        }
-
-        private void OnDisable() {
-            _pathData = null;
-        }
-
         public override void OnToolGUI(EditorWindow window) {
             Event e = Event.current;
 
@@ -63,7 +53,7 @@ namespace PathCreator.Editor.MainEditor.Tools.Delete {
                     }
 
                     _controlIds = new Dictionary<PathPoint, int>();
-                    foreach (PathPoint point in _pathData.path.Points) {
+                    foreach (PathPoint point in PathEditorState.Instance.Path.Points) {
                         _controlIds.Add(point, GUIUtility.GetControlID(FocusType.Passive));
                     }
                     break;
@@ -81,7 +71,7 @@ namespace PathCreator.Editor.MainEditor.Tools.Delete {
 
         private void RepaintHandles() {
 
-            Path path = _pathData.path;
+            Path path = PathEditorState.Instance.Path;
         
             Handles.color = Color.red;
             for (int i = 0; i < path.Count - 1; i++) {
@@ -106,15 +96,15 @@ namespace PathCreator.Editor.MainEditor.Tools.Delete {
         private void DeletePoint() {
             if (Event.current.button != 0) return;
             if (_hoveringOverPoint == null) return;
-            Undo.RecordObject(_pathData.path, "Delete point on path");
-            _pathData.path.Remove(_hoveringOverPoint);
+            Undo.RecordObject(PathEditorState.Instance.Path, "Delete point on path");
+            PathEditorState.Instance.Path.Remove(_hoveringOverPoint);
             PointDeleted?.Invoke();
             Event.current.Use();
         }
     
         private void FindPoint() {
             float radius = 0.1f;
-            Path path = _pathData.path;
+            Path path = PathEditorState.Instance.Path;
             PathPoint closetPoint = path.GetPoint(0);
             float distance = HandleUtility.DistanceToCircle(closetPoint.position, radius);
             foreach (PathPoint point in path.Points) {
