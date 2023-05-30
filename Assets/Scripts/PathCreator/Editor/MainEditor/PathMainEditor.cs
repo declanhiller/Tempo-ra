@@ -72,9 +72,12 @@ namespace PathCreator.Editor.MainEditor {
             Path path = PathEditorState.Instance.Path;
             Grid2D grid = PathEditorState.Instance.Grid;
             if (path.transform.hasChanged) {
-                Vector3 closestPointOnGrid = grid.GetClosestPointOnGrid(path.transform.position);
-                path.transform.position = closestPointOnGrid;
-                Vector3 delta = closestPointOnGrid - _startTransformPosition;
+                Vector3 location = path.transform.position;
+                if (PathEditorState.Instance.snapType == PathEditorState.SnapType.Snap) {
+                    location = grid.GetClosestPointOnGrid(path.transform.position);
+                }
+                path.transform.position = location;
+                Vector3 delta = location - _startTransformPosition;
                 foreach (PathPoint pathPoint in path.Points) {
                     pathPoint.position += delta;
                 }
