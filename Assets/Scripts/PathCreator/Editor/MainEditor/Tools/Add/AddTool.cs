@@ -11,14 +11,11 @@ namespace PathCreator.Editor.MainEditor.Tools.Add {
     [EditorTool("Add Point Tool", typeof(Path))]
     public class AddTool : EditorTool {
 
-        private PathData _pathData;
         private Dictionary<PathPoint, int> _controlIds;
 
         private Vector3 _proposedPointPosition;
         private int _indexOfProposedPoint;
         private int _proposedPointControlId;
-
-        private bool _isInSnapMode;
         
         public static bool IsActive { get; private set; }
 
@@ -44,15 +41,7 @@ namespace PathCreator.Editor.MainEditor.Tools.Add {
                 ToolManager.SetActiveTool<MoveTool>();
             }
         }
-
-        private void OnEnable() {
-            _pathData = new PathData((Path) target, FindObjectOfType<Grid2D>());
-            AddToolOverlay.SnapModeSwitched += isSnapMode => _isInSnapMode = isSnapMode;
-        }
-
-        private void OnDisable() {
-            _pathData = null;
-        }
+        
 
         public override void OnToolGUI(EditorWindow window) {
             if (!(window is SceneView)) return;
@@ -71,7 +60,7 @@ namespace PathCreator.Editor.MainEditor.Tools.Add {
                     }
 
                     _controlIds = new Dictionary<PathPoint, int>();
-                    foreach (PathPoint point in _pathData.path.Points) {
+                    foreach (PathPoint point in PathEditorState.Instance.Path.Points) {
                         _controlIds.Add(point, GUIUtility.GetControlID(FocusType.Passive));
                     }
                     _proposedPointControlId = GUIUtility.GetControlID(FocusType.Passive);
@@ -91,14 +80,14 @@ namespace PathCreator.Editor.MainEditor.Tools.Add {
     
         private void CreateNewPointAtPosition() {
             if (Event.current.button != 0) return;
-            Undo.RecordObject(_pathData.path, "Add new point");
-            _pathData.path.Add(_indexOfProposedPoint, _proposedPointPosition);
+            Undo.RecordObject(PathEditorState.Instance.Path, "Add new point");
+            PathEditorState.Instance.Path.Add(_indexOfProposedPoint, _proposedPointPosition);
             PointAdded?.Invoke();
             Event.current.Use();
         }
     
         private void RepaintHandles() {
-            Path path = _pathData.path;
+            Path path = PathEditorState.Instance.Path;
 
             Handles.color = Color.red;
             if (_indexOfProposedPoint == 0) {
@@ -135,8 +124,8 @@ namespace PathCreator.Editor.MainEditor.Tools.Add {
         private void GetNewPosition() {
 
             Event evt = Event.current;
-            Path path = _pathData.path;
-            Grid2D grid = _pathData.grid;
+            Path path = PathEditorState.Instance.Path;
+            Grid2D grid = PathEditorState.Instance.Grid;
 
             //Find point world position
             Ray worldRay = HandleUtility.GUIPointToWorldRay(evt.mousePosition);
@@ -144,7 +133,7 @@ namespace PathCreator.Editor.MainEditor.Tools.Add {
             float x = worldRay.origin.x - slopeMultiplier * worldRay.direction.x;
             float z = worldRay.origin.z - slopeMultiplier * worldRay.direction.z;
             Vector3 mousePosition = new Vector3(x, path.transform.position.y, z);
-            if (_isInSnapMode) {
+            if (PathEditorState.Instance.snapType == PathEditorState.SnapType.Snap) {
                 mousePosition = grid.GetClosestPointOnGrid(mousePosition);
             }
             _proposedPointPosition = mousePosition;
