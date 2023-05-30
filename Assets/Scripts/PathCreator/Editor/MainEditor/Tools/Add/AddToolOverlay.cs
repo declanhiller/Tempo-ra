@@ -17,9 +17,6 @@ public class AddToolOverlay : Overlay, ITransientOverlay {
     private static readonly Color selectedColor = new Color(1, 1, 0.769f);
     private static readonly Color normalColor = new Color(0, 0, 0);
     
-    public static event Action<bool> SnapModeSwitched;
-    
-
     private Button _snap;
     private Button _free;
 
