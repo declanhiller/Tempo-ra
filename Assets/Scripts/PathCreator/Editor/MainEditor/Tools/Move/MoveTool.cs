@@ -11,15 +11,14 @@ namespace PathCreator.Editor.MainEditor.Tools.Move {
     public class MoveTool : EditorTool {
 
         public static bool IsActive;
-
-        private PathData _pathData;
-
+        
         private PathPoint _selectedPoint;
         private Dictionary<PathPoint, int> _controlIds;
-        private bool _snapToGrid;
 
         public static event Action PointMoved;
         public static event Action StartPointMoved;
+
+        private Action<PathEditorState.SnapType> _updateSnapType;
 
         [SerializeField] private Texture2D iconTexture;
     
@@ -43,17 +42,16 @@ namespace PathCreator.Editor.MainEditor.Tools.Move {
         }
 
         private void OnEnable() {
-            _pathData = new PathData((Path) target, FindObjectOfType<Grid2D>());
             MoveToolOverlay.PositionChanged += pos => {
                 if (_selectedPoint == null) return;
                 _selectedPoint.position = pos;
             };
-            MoveToolOverlay.SnapModeSwitched += isSnap => { _snapToGrid = isSnap; };
         }
 
         private void OnDisable() {
-            _pathData = null;
+            
         }
+
 
         public override void OnToolGUI(EditorWindow window) {
             if (!(window is SceneView)) return;
@@ -71,7 +69,7 @@ namespace PathCreator.Editor.MainEditor.Tools.Move {
                     }
 
                     _controlIds = new Dictionary<PathPoint, int>();
-                    foreach (PathPoint point in _pathData.path.Points) {
+                    foreach (PathPoint point in PathEditorState.Instance.Path.Points) {
                         _controlIds.Add(point, GUIUtility.GetControlID(FocusType.Passive));
                     }
 
@@ -91,8 +89,8 @@ namespace PathCreator.Editor.MainEditor.Tools.Move {
 
         private void MovePoint() {
             if (_selectedPoint == null || Event.current.button != 0) return;
-            Path path = _pathData.path;
-            Grid2D grid = _pathData.grid;
+            Path path = PathEditorState.Instance.Path;
+            Grid2D grid = PathEditorState.Instance.Grid;
 
             
             Ray worldRay = HandleUtility.GUIPointToWorldRay(Event.current.mousePosition);
@@ -100,7 +98,7 @@ namespace PathCreator.Editor.MainEditor.Tools.Move {
             float x = worldRay.origin.x - slopeMultiplier * worldRay.direction.x;
             float z = worldRay.origin.z - slopeMultiplier * worldRay.direction.z;
             Vector3 location = new Vector3(x, path.transform.position.y, z);
-            if (_snapToGrid) {
+            if (PathEditorState.Instance.snapType == PathEditorState.SnapType.Snap) {
                 location = grid.GetClosestPointOnGrid(location);
             }
             PointMoved?.Invoke();
@@ -118,7 +116,7 @@ namespace PathCreator.Editor.MainEditor.Tools.Move {
         private void SelectPoint() {
             if (Event.current.button != 0) return;
             float radius = 0.1f;
-            Path path = _pathData.path;
+            Path path = PathEditorState.Instance.Path;
             PathPoint closetPoint = path.GetPoint(0);
             float distance = HandleUtility.DistanceToCircle(closetPoint.position, radius);
             foreach (PathPoint point in path.Points) {
@@ -136,7 +134,7 @@ namespace PathCreator.Editor.MainEditor.Tools.Move {
 
         private void RepaintHandles() {
 
-            Path path = _pathData.path;
+            Path path = PathEditorState.Instance.Path;
 
             Handles.color = Color.red;
             for (int i = 0; i < path.Count - 1; i++) {

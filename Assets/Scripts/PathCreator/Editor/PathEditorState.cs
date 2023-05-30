@@ -11,7 +11,7 @@ namespace PathCreator.Editor {
         public static PathEditorState Instance => _instance ??= new PathEditorState();
 
         public Path Path { get; set; }
-        public Grid2D Grid2D { get; set; }
+        public Grid2D Grid { get; set; }
 
         public static event Action<MoveType> MoveTypeChanged;
         public MoveType moveType {

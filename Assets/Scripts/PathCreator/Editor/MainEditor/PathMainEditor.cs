@@ -70,7 +70,7 @@ namespace PathCreator.Editor.MainEditor {
 
         private void MovePointsWithTransform() {
             Path path = PathEditorState.Instance.Path;
-            Grid2D grid = PathEditorState.Instance.Grid2D;
+            Grid2D grid = PathEditorState.Instance.Grid;
             if (path.transform.hasChanged) {
                 Vector3 closestPointOnGrid = grid.GetClosestPointOnGrid(path.transform.position);
                 path.transform.position = closestPointOnGrid;
@@ -87,7 +87,7 @@ namespace PathCreator.Editor.MainEditor {
             // _path = (Path) target;
             // _grid = FindObjectOfType<Grid2D>();
             PathEditorState.Instance.Path = (Path) target;
-            PathEditorState.Instance.Grid2D = FindObjectOfType<Grid2D>();
+            PathEditorState.Instance.Grid = FindObjectOfType<Grid2D>();
             MoveTool.PointMoved += MarkAsChanged;
             AddTool.PointAdded += MarkAsChanged;
             DeleteTool.PointDeleted += MarkAsChanged;
