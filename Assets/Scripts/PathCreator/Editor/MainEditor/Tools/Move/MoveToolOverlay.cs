@@ -17,8 +17,7 @@ namespace PathCreator.Editor.MainEditor.Tools.Move {
         private static readonly Color normalColor = new Color(0, 0, 0);
 
         public static event Action<Vector3> PositionChanged;
-        public static event Action<bool> SnapModeSwitched;
-
+        
         private FloatField _x;
         private FloatField _y;
         private FloatField _z;
@@ -74,22 +73,37 @@ namespace PathCreator.Editor.MainEditor.Tools.Move {
             _snap = root.Query<Button>("snap").First();
             _free = root.Query<Button>("free").First();
         
-            SetBorderColor(_snap, normalColor);
-            SetBorderColor(_free, selectedColor);
-
+            SwitchSnapType(PathEditorState.Instance.snapType);
+            
             _snap.clicked += () => {
-                SnapModeSwitched?.Invoke(true);
-                SetBorderColor(_snap, selectedColor);
-                SetBorderColor(_free, normalColor);
+                PathEditorState.Instance.snapType = PathEditorState.SnapType.Snap;
             };
             _free.clicked += () => {
-                SnapModeSwitched?.Invoke(false);
-                SetBorderColor(_snap, normalColor);
-                SetBorderColor(_free, selectedColor);
+                PathEditorState.Instance.snapType = PathEditorState.SnapType.Free;
             };
+
+            PathEditorState.SnapTypeChanged += SwitchSnapType;
+            
             return root;
         }
 
+        public override void OnWillBeDestroyed() {
+            PathEditorState.SnapTypeChanged -= SwitchSnapType;
+        }
+
+        private void SwitchSnapType(PathEditorState.SnapType type) {
+            switch (type) {
+                case PathEditorState.SnapType.Free:
+                    SetBorderColor(_snap, normalColor);
+                    SetBorderColor(_free, selectedColor);
+                    break;
+                case PathEditorState.SnapType.Snap:
+                    SetBorderColor(_snap, selectedColor);
+                    SetBorderColor(_free, normalColor);
+                    break;
+            }
+        }
+        
         private void SetBorderColor(VisualElement o, Color color) {
             o.style.borderBottomColor = color;
             o.style.borderLeftColor = color;

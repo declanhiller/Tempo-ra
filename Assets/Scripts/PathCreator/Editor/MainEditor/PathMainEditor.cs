@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
 using DefaultNamespace;
+using PathCreator.Editor.MainEditor.Data;
 using PathCreator.Editor.MainEditor.Tools.Add;
 using PathCreator.Editor.MainEditor.Tools.Delete;
 using PathCreator.Editor.MainEditor.Tools.Move;
 using UnityEditor;
 using UnityEditor.EditorTools;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -13,10 +15,13 @@ namespace PathCreator.Editor.MainEditor {
     [CustomEditor(typeof(Path))]
     public class PathMainEditor : UnityEditor.Editor {
 
-        private Path _path;
-        private Grid2D _grid;
-
         private bool _wasStartPointChanged;
+        
+        [SerializeField] private VisualTreeAsset inspectorGUI;
+
+        private Action<PathEditorState.MoveType> _updateMoveType;
+        private Action<PathEditorState.SnapType> _updateSnapType;
+        
 
         [DrawGizmo(GizmoType.NonSelected | GizmoType.Selected)]
         private static void DrawGridGizmo(Path path, GizmoType gizmoType) {
@@ -29,26 +34,64 @@ namespace PathCreator.Editor.MainEditor {
 
             if (!_wasStartPointChanged) MovePointsWithTransform();
 
-            _startTransformPosition = _path.transform.position;
+            _startTransformPosition = PathEditorState.Instance.Path.transform.position;
             _wasStartPointChanged = false;
         }
 
+        public override VisualElement CreateInspectorGUI() {
+            VisualElement root = new VisualElement();
+            inspectorGUI.CloneTree(root);
+
+            //Register move type enum
+            EnumField moveTypeField = root.Query<EnumField>("move_type").First();
+            moveTypeField.Init(PathEditorState.Instance.moveType);
+            moveTypeField.RegisterValueChangedCallback(evt => {
+                PathEditorState.Instance.moveType = (PathEditorState.MoveType) evt.newValue; 
+            });
+            _updateMoveType = type => moveTypeField.SetValueWithoutNotify(type);
+            PathEditorState.MoveTypeChanged += _updateMoveType;
+            
+            //Register snap type enum
+            EnumField snapTypeField = root.Query<EnumField>("snap_type").First();
+            snapTypeField.Init(PathEditorState.Instance.snapType);
+            snapTypeField.RegisterValueChangedCallback(evt => {
+                PathEditorState.Instance.snapType = (PathEditorState.SnapType) evt.newValue;
+            });
+            _updateSnapType = type => snapTypeField.SetValueWithoutNotify(type);
+            PathEditorState.SnapTypeChanged += _updateSnapType;
+            
+
+            return root;
+        }
+
+        private void OnDestroy() {
+            PathEditorState.MoveTypeChanged -= _updateMoveType;
+            PathEditorState.SnapTypeChanged -= _updateSnapType;
+        }
+
         private void MovePointsWithTransform() {
-            if (_path.transform.hasChanged) {
-                Vector3 closestPointOnGrid = _grid.GetClosestPointOnGrid(_path.transform.position);
-                _path.transform.position = closestPointOnGrid;
-                Vector3 delta = closestPointOnGrid - _startTransformPosition;
-                foreach (PathPoint pathPoint in _path.Points) {
+            Path path = PathEditorState.Instance.Path;
+            Grid2D grid = PathEditorState.Instance.Grid;
+            if (path.transform.hasChanged) {
+                Vector3 location = path.transform.position;
+                if (PathEditorState.Instance.snapType == PathEditorState.SnapType.Snap) {
+                    location = grid.GetClosestPointOnGrid(path.transform.position);
+                }
+                path.transform.position = location;
+                Vector3 delta = location - _startTransformPosition;
+                foreach (PathPoint pathPoint in path.Points) {
                     pathPoint.position += delta;
                 }
 
-                _path.transform.hasChanged = false;
+                path.transform.hasChanged = false;
             }
         }
 
         private void OnEnable() {
-            _path = (Path) target;
-            _grid = FindObjectOfType<Grid2D>();
+            // _path = (Path) target;
+            // _grid = FindObjectOfType<Grid2D>();
+            PathEditorState.Instance.Path = (Path) target;
+            PathEditorState.Instance.Grid = FindObjectOfType<Grid2D>();
             MoveTool.PointMoved += MarkAsChanged;
             AddTool.PointAdded += MarkAsChanged;
             DeleteTool.PointDeleted += MarkAsChanged;
@@ -67,7 +110,7 @@ namespace PathCreator.Editor.MainEditor {
         }
 
         private void MarkAsChanged() {
-            _path.MarkAsChanged();
+            PathEditorState.Instance.Path.MarkAsChanged();
         }
 
         private static void DrawGizmoPath(Path path) {
@@ -78,7 +121,9 @@ namespace PathCreator.Editor.MainEditor {
                 Gizmos.color = Color.red;
                 
                 GizmosUtility.DrawLineWithThickness(startPoint, endPoint, 2f);
+                
             }
         }
+        
     }
 }
