@@ -82,6 +82,9 @@ namespace PathCreator.Editor.MainEditor.Tools.Delete {
             foreach (PathPoint pathPoint in path.Points) {
                 int handleId = _controlIds[pathPoint];
 
+                if (pathPoint.index == path.Count - 1) Handles.color = Color.red;
+                if (pathPoint.index == 0) Handles.color = Color.green;
+                
                 if (pathPoint == _hoveringOverPoint) {
                     using (new Handles.DrawingScope(Color.yellow)) {
                         Handles.FreeMoveHandle(handleId, pathPoint.position, Quaternion.identity, 0.1f, Vector2.zero, Handles.SphereHandleCap);
@@ -90,6 +93,7 @@ namespace PathCreator.Editor.MainEditor.Tools.Delete {
                 }
             
                 Handles.FreeMoveHandle(handleId, pathPoint.position, Quaternion.identity, 0.1f, Vector2.zero, Handles.SphereHandleCap);
+                Handles.color = Color.white;
             }
         }
     

@@ -6,4 +6,8 @@
         <uie:EnumField label="Move Type" value="Center" name="move_type" />
         <uie:EnumField label="Snap Type" value="Center" name="snap_type" />
     </ui:VisualElement>
+    <ui:VisualElement name="path_preview" style="padding-top: 10px;">
+        <ui:Toggle label="Preview Corners" name="preview_corners" />
+        <uie:FloatField label="Preview Belt Width" value="0" name="preview_belt_width" />
+    </ui:VisualElement>
 </ui:UXML>

@@ -81,7 +81,9 @@ namespace PathCreator.Editor.MainEditor.Tools.Add {
         private void CreateNewPointAtPosition() {
             if (Event.current.button != 0) return;
             Undo.RecordObject(PathEditorState.Instance.Path, "Add new point");
-            PathEditorState.Instance.Path.Add(_indexOfProposedPoint, _proposedPointPosition);
+            int inputIndex = _indexOfProposedPoint;
+            if (PathEditorState.Instance.Path.Count == 1) inputIndex = 1;
+            PathEditorState.Instance.Path.Add(inputIndex, _proposedPointPosition);
             PointAdded?.Invoke();
             Event.current.Use();
         }
@@ -116,9 +118,12 @@ namespace PathCreator.Editor.MainEditor.Tools.Add {
         
             Handles.color = Color.white;
             foreach (PathPoint point in path.Points) {
+                if (point.index == path.Count - 1) Handles.color = Color.red;
+                if (point.index == 0) Handles.color = Color.green;
                 Handles.FreeMoveHandle(_controlIds[point], point.position, Quaternion.identity, 0.1f, Vector2.zero, Handles.SphereHandleCap);
+                Handles.color = Color.white;
             }
-        
+
         }
     
         private void GetNewPosition() {

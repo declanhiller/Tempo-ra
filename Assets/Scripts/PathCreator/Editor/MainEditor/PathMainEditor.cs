@@ -59,9 +59,19 @@ namespace PathCreator.Editor.MainEditor {
             });
             _updateSnapType = type => snapTypeField.SetValueWithoutNotify(type);
             PathEditorState.SnapTypeChanged += _updateSnapType;
-            
+
+            FloatField previewBeltWidth = root.Query<FloatField>("preview_belt_width").First();
+            previewBeltWidth.RegisterValueChangedCallback(evt => RecalculateCornerRadii(evt.newValue));
+
 
             return root;
+        }
+
+        void RecalculateCornerRadii(float newWidth) {
+            Path path = PathEditorState.Instance.Path;
+            for (int i = 0; i < path.Count; i++) {
+                
+            }
         }
 
         private void OnDestroy() {
@@ -96,6 +106,7 @@ namespace PathCreator.Editor.MainEditor {
             AddTool.PointAdded += MarkAsChanged;
             DeleteTool.PointDeleted += MarkAsChanged;
             MoveTool.StartPointMoved += StartPointChanged;
+            PathEditorState.Instance.Path.NewStartPoint += ChangeTransform;
         }
 
         private void OnDisable() {
@@ -103,8 +114,14 @@ namespace PathCreator.Editor.MainEditor {
             AddTool.PointAdded -= MarkAsChanged;
             DeleteTool.PointDeleted -= MarkAsChanged;
             MoveTool.StartPointMoved -= StartPointChanged;
+            PathEditorState.Instance.Path.NewStartPoint -= ChangeTransform;
         }
 
+        private void ChangeTransform(PathPoint point) {
+            StartPointChanged();
+            PathEditorState.Instance.Path.transform.position = point.position;
+        }
+        
         private void StartPointChanged() {
             _wasStartPointChanged = true;
         }

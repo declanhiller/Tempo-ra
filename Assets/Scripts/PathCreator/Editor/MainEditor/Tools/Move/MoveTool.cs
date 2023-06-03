@@ -165,9 +165,6 @@ namespace PathCreator.Editor.MainEditor.Tools.Move {
                 // }
 
                 Handles.color = Color.blue;
-                
-
-
 
                 float endPointAngle = Vector3.Angle(path.GetPoint(i - 1).position - path.GetPoint(i).position, 
                     path.GetPoint(i + 1).position - path.GetPoint(i).position);
@@ -178,8 +175,6 @@ namespace PathCreator.Editor.MainEditor.Tools.Move {
                 float startAngle = midPointAngle - totalAngleDelta / 2;
                 float endAngle = midPointAngle + totalAngleDelta / 2;
                 
-                // float kiteDiagonal = Mathf.Tan(Mathf.Deg2Rad * endPointAngle / 2) * Mathf.Sin(Mathf.Deg2Rad * totalAngleDelta / 2) *
-                //                pathPoint.radius + Mathf.Cos(Mathf.Deg2Rad * totalAngleDelta / 2) * pathPoint.radius;
                 float kiteDiagonal = pathPoint.radius / Mathf.Sin(Mathf.Deg2Rad * endPointAngle / 2);
                 
                 Vector3 circlePosition = pathPoint.position + direction * kiteDiagonal;
@@ -215,8 +210,11 @@ namespace PathCreator.Editor.MainEditor.Tools.Move {
                     }
                 }
                 else {
+                    if (point.index == path.Count - 1) Handles.color = Color.red;
+                    if (point.index == 0) Handles.color = Color.green;
                     Handles.FreeMoveHandle(handleId, point.position, Quaternion.identity, 0.1f, Vector2.zero,
                         Handles.SphereHandleCap);
+                    Handles.color = Color.white;
 
                 }
             }

@@ -11,6 +11,7 @@ namespace PathCreator {
         };
 
         public event Action PathChanged;
+        public event Action<PathPoint> NewStartPoint;
 
         public int Count => points.Count;
 
@@ -90,6 +91,9 @@ namespace PathCreator {
             for (int i = index; i < points.Count; i++) {
                 points[i].index = i;
             }
+            if (index == 0) {
+                NewStartPoint?.Invoke(points[0]);
+            }
         }
 
 
@@ -101,9 +105,15 @@ namespace PathCreator {
                 points.Add(pathPoint);
                 return pathPoint;
             }
+
+
             points.Insert(index, pathPoint);
             for (int i = index + 1; i < points.Count; i++) {
                 points[i].index = i;
+            }
+            
+            if (index == 0) {
+                NewStartPoint?.Invoke(pathPoint);
             }
 
             return pathPoint;
