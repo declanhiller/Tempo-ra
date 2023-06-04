@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Main;
 using PathCreator;
 using UnityEditor;
 using UnityEngine;
@@ -17,111 +18,25 @@ namespace DefaultNamespace {
 
         [SerializeField] private int curveResolution;
 
-        private void Start() {
-            // CreateBeltMesh();
-        }
+        [SerializeField] public ConveyorCrossSection crossSection = new();
 
-
-        public void CreateBeltMesh(MeshFilter meshFilter, bool goThroughSpecial) {
-            if (path == null) {
-                path = GetComponent<Path>();
-            }
-
-            if (path.Count < 2) {
-                throw new Exception("Your path needs to have at least 2 points to generate a mesh");
-            }
-
-
-            Vector3[] vertices = new Vector3[path.Count * 2];
-            Vector2[] uvs = new Vector2[vertices.Length];
-            int[] tris = new int[3 * (2 * (path.Count - 1))];
-            int vertIndex = 0;
-            int triIndex = 0;
-            int index = 0;
-            Vector3 zero = path.GetPoint(0).position;
-
-            for (int i = 0; i < path.Count; i++) {
-                PathPoint currentPoint = path.GetPoint(i);
-                if (i == 0 || i == path.Count - 1) { //Start and Last points have no corners to do complicated bendy math on
-                    Vector3 currentPosition = currentPoint.position;
-
-                    Vector3 left = GetLeftPoint(path.GetNormalizedForwardVector(currentPoint), width) + currentPosition;
-                    Vector3 right = GetRightPoint(path.GetNormalizedForwardVector(currentPoint), width) + currentPosition;
-
-                    vertices[vertIndex] = left - zero;
-                    vertices[vertIndex + 1] = right - zero;
-                }
-                else {
-                    PathPoint previousPoint = path.GetPoint(i - 1);
-                    Vector3 previousMidpoint = (currentPoint.position + previousPoint.position) / 2;
-                    Vector3 previousMidpointForwardVector = (currentPoint.position - previousPoint.position).normalized;
-                    
-                    PathPoint nextPoint = path.GetPoint(i + 1);
-                    Vector3 followingMidpoint = (currentPoint.position + nextPoint.position) / 2;
-                    Vector3 followingMidpointForwardVector = (nextPoint.position - currentPoint.position).normalized;
-
-                    float angle = Vector3.Angle(previousMidpointForwardVector, followingMidpointForwardVector);
-
-                    float xDistance = Mathf.Abs(followingMidpoint.x - previousMidpoint.x);
-                    float yDistance = Mathf.Abs(followingMidpoint.y - previousMidpoint.y);
-                    
-                    
-                    
-                    float vectorLength = 1;
-                    
-                    for (int j = 0; j < curveResolution; j++) {
-                        float t = (float) j / (curveResolution - 1);
-
-                        float rotation = Mathf.Lerp(0, angle, t);
-                        Vector3 pointForwardVector = Vector3.RotateTowards(previousMidpointForwardVector, followingMidpointForwardVector, 
-                            Mathf.Deg2Rad * rotation, 0).normalized;
-                        
-                        
-
-                        // Vector3.Lerp
-                    }
-                    
-                }
-                
-
-                float completionPercent = index / (float) (path.Count - 1);
-                index++;
-                float v = 1 - Mathf.Abs(2 * completionPercent - 1);
-                uvs[vertIndex] = new Vector2(0, v);
-                uvs[vertIndex + 1] = new Vector2(1, v);
-
-                if (i < path.Count - 1) {
-                    tris[triIndex] = vertIndex;
-                    tris[triIndex + 1] = vertIndex + 2;
-                    tris[triIndex + 2] = vertIndex + 1;
-
-                    tris[triIndex + 3] = vertIndex + 2;
-                    tris[triIndex + 4] = vertIndex + 3;
-                    tris[triIndex + 5] = vertIndex + 1;
-
-                    triIndex += 6;
-                }
-
-                vertIndex += 2;
-            }
-
-            Mesh mesh = new Mesh();
-            mesh.vertices = vertices;
-            mesh.triangles = tris;
-            mesh.uv = uvs;
-            meshFilter.mesh = mesh;
-        }
-
+        public List<Vector3> proposedPoints;
 
         public void CreateBeltMesh(MeshFilter meshFilter) {
-
+            
             if (path == null) {
                 path = GetComponent<Path>();
             }
 
             if (path.Count < 2) {
-                throw new Exception("Your path needs to have at least 2 points to generate a mesh");
+
+                Mesh emptyMesh = new Mesh();
+                meshFilter.mesh = emptyMesh;
+                Debug.LogWarning("Your path needs to have at least 2 points to generate a mesh");
+                return;
             }
+
+            proposedPoints = new List<Vector3>();
 
 
             Vector3[] vertices = new Vector3[path.Count * 2];
@@ -142,6 +57,9 @@ namespace DefaultNamespace {
 
                     vertices[vertIndex] = left - zero;
                     vertices[vertIndex + 1] = right - zero;
+                    
+                    AddToProposedPoints(path.GetNormalizedForwardVector(endPoint), endPosition, Vector3.Distance(left, right));
+                    
                 }
                 else {
                     PathPoint startPoint = path.GetPoint(index - 1);
@@ -164,6 +82,8 @@ namespace DefaultNamespace {
                         endPositionLeftDirection);
                     LineLineIntersection(out rightPointPosition, positionRightOfMidpoint, midpointForwardVector,
                         endPosition, endPositionRightDirection);
+                    
+                    AddToProposedPoints(path.GetNormalizedForwardVector(endPoint), endPosition, Vector3.Distance(leftPointPosition, rightPointPosition));
 
                     vertices[vertIndex] = leftPointPosition - zero;
                     vertices[vertIndex + 1] = rightPointPosition - zero;
@@ -195,6 +115,25 @@ namespace DefaultNamespace {
             mesh.triangles = tris;
             mesh.uv = uvs;
             meshFilter.mesh = mesh;
+        }
+
+        public void AddToProposedPoints(Vector3 forward, Vector3 position, float width) {
+            Vector2 rightZero = Vector2.up;
+            float signedAngle = Vector2.SignedAngle(rightZero, new Vector2(forward.x, forward.z));
+            float requiredScaleRatio = width / crossSection.Width;
+            float midPoint = crossSection.VerticalMidpoint;
+            foreach (Vector3 point in crossSection.points) {
+
+                float distToMid = (point.x - midPoint) * requiredScaleRatio;
+                
+                Vector3 scaledPoint = new Vector3(midPoint + distToMid, point.y, point.z);
+                float x = scaledPoint.x * Mathf.Cos(signedAngle * Mathf.Deg2Rad) -
+                          scaledPoint.z * Mathf.Sin(signedAngle * Mathf.Deg2Rad);
+                float z = scaledPoint.x * Mathf.Sin(signedAngle * Mathf.Deg2Rad) +
+                          scaledPoint.z * Mathf.Cos(signedAngle * Mathf.Deg2Rad);
+                Vector3 newPathPoint = new Vector3(x, point.y, z) + position;
+                proposedPoints.Add(newPathPoint);
+            }
         }
 
         private Vector3 GetLeftPoint(Vector3 forwardVector, float width) {
