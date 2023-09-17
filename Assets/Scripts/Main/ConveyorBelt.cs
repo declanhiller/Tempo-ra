@@ -39,12 +39,12 @@ namespace DefaultNamespace {
             proposedPoints = new List<Vector3>();
 
 
-            Vector3[] vertices = new Vector3[path.Count * 2];
+            Vector3[] vertices = new Vector3[path.Count * crossSection.points.Count];
             Vector2[] uvs = new Vector2[vertices.Length];
-            int[] tris = new int[3 * (2 * (path.Count - 1))];
+            int numberOfTrisInASegment = (path.Count - 1) * (crossSection.points.Count) * 2;
+            int[] tris = new int[numberOfTrisInASegment * 3]; // multiplying 3 for each vertex of the triangle
             int vertIndex = 0;
             int triIndex = 0;
-            int index = 0;
             Vector3 zero = path.GetPoint(0).position;
 
             for (int i = 0; i < path.Count; i++) {
@@ -55,14 +55,18 @@ namespace DefaultNamespace {
                     Vector3 left = GetLeftPoint(path.GetNormalizedForwardVector(endPoint), width) + endPosition;
                     Vector3 right = GetRightPoint(path.GetNormalizedForwardVector(endPoint), width) + endPosition;
 
-                    vertices[vertIndex] = left - zero;
-                    vertices[vertIndex + 1] = right - zero;
+                    // vertices[vertIndex] = left - zero;
+                    // vertices[vertIndex + 1] = right - zero;
                     
-                    AddToProposedPoints(path.GetNormalizedForwardVector(endPoint), endPosition, Vector3.Distance(left, right));
+                    Vector3[] crossSectionPoints = GetCrossSectionPoints(path.GetNormalizedForwardVector(endPoint), endPosition, Vector3.Distance(left, right));
+                    
+                    for (int j = 0; j < crossSection.points.Count; j++) {
+                        vertices[vertIndex + j] = crossSectionPoints[j] - zero;
+                    }
                     
                 }
                 else {
-                    PathPoint startPoint = path.GetPoint(index - 1);
+                    PathPoint startPoint = path.GetPoint(i - 1);
 
                     Vector3 startPosition = startPoint.position;
                     Vector3 endPosition = endPoint.position;
@@ -83,47 +87,74 @@ namespace DefaultNamespace {
                     LineLineIntersection(out rightPointPosition, positionRightOfMidpoint, midpointForwardVector,
                         endPosition, endPositionRightDirection);
                     
-                    AddToProposedPoints(path.GetNormalizedForwardVector(endPoint), endPosition, Vector3.Distance(leftPointPosition, rightPointPosition));
-
-                    vertices[vertIndex] = leftPointPosition - zero;
-                    vertices[vertIndex + 1] = rightPointPosition - zero;
+                    Vector3[] crossSectionPoints = GetCrossSectionPoints(path.GetNormalizedForwardVector(endPoint), endPosition, Vector3.Distance(leftPointPosition, rightPointPosition));
+                    
+                    for (int j = 0; j < crossSection.points.Count; j++) {
+                        vertices[vertIndex + j] = crossSectionPoints[j] - zero;
+                    }
+                    
+                    // vertices[vertIndex] = leftPointPosition - zero;
+                    // vertices[vertIndex + 1] = rightPointPosition - zero;
                 }
 
-                float completionPercent = index / (float) (path.Count - 1);
-                index++;
+                float completionPercent = i / (float) (path.Count - 1);
                 float v = 1 - Mathf.Abs(2 * completionPercent - 1);
-                uvs[vertIndex] = new Vector2(0, v);
-                uvs[vertIndex + 1] = new Vector2(1, v);
+                for (int j = 0; j < crossSection.points.Count; j++) {
+                    uvs[vertIndex + j] = new Vector2((float) j / (crossSection.points.Count - 1), v);
+                }
 
                 if (i < path.Count - 1) {
-                    tris[triIndex] = vertIndex;
-                    tris[triIndex + 1] = vertIndex + 2;
-                    tris[triIndex + 2] = vertIndex + 1;
+                    int crossSectionPointsCount = crossSection.points.Count;
+                    for (int j = 0; j < crossSectionPointsCount - 1; j++) {
+                        int relativeJZero = j + vertIndex;
 
-                    tris[triIndex + 3] = vertIndex + 2;
-                    tris[triIndex + 4] = vertIndex + 3;
-                    tris[triIndex + 5] = vertIndex + 1;
+                        tris[triIndex] = relativeJZero + crossSectionPointsCount + 1;
+                        tris[triIndex + 1] = relativeJZero + crossSectionPointsCount;
+                        tris[triIndex + 2] = relativeJZero;
+
+                        tris[triIndex + 3] = relativeJZero + 1;
+                        tris[triIndex + 4] = relativeJZero + crossSectionPointsCount + 1;
+                        tris[triIndex + 5] = relativeJZero;
+                        
+                        triIndex += 6;
+                    }
+
+                    int indexOfEndingPoint = vertIndex + crossSectionPointsCount - 1;
+                    
+                    tris[triIndex] = vertIndex;
+                    tris[triIndex + 1] = indexOfEndingPoint + 1;
+                    tris[triIndex + 2] = indexOfEndingPoint;
+
+                    tris[triIndex + 3] = indexOfEndingPoint + 1;
+                    tris[triIndex + 4] = indexOfEndingPoint + crossSectionPointsCount;
+                    tris[triIndex + 5] = indexOfEndingPoint;
 
                     triIndex += 6;
+
                 }
 
-                vertIndex += 2;
+                vertIndex += crossSection.points.Count;
             }
 
             Mesh mesh = new Mesh();
             mesh.vertices = vertices;
             mesh.triangles = tris;
             mesh.uv = uvs;
+            mesh.RecalculateNormals();
+            // mesh.
             meshFilter.mesh = mesh;
         }
 
-        public void AddToProposedPoints(Vector3 forward, Vector3 position, float width) {
+        public Vector3[] GetCrossSectionPoints(Vector3 forward, Vector3 position, float width) {
             Vector2 rightZero = Vector2.up;
             float signedAngle = Vector2.SignedAngle(rightZero, new Vector2(forward.x, forward.z));
             float requiredScaleRatio = width / crossSection.Width;
             float midPoint = crossSection.VerticalMidpoint;
-            foreach (Vector3 point in crossSection.points) {
 
+            Vector3[] returnPoints = new Vector3[crossSection.points.Count];
+
+            for (int i = 0; i < crossSection.points.Count; i++) {
+                Vector3 point = crossSection.points[i];
                 float distToMid = (point.x - midPoint) * requiredScaleRatio;
                 
                 Vector3 scaledPoint = new Vector3(midPoint + distToMid, point.y, point.z);
@@ -133,7 +164,10 @@ namespace DefaultNamespace {
                           scaledPoint.z * Mathf.Cos(signedAngle * Mathf.Deg2Rad);
                 Vector3 newPathPoint = new Vector3(x, point.y, z) + position;
                 proposedPoints.Add(newPathPoint);
+                returnPoints[i] = newPathPoint;
             }
+
+            return returnPoints;
         }
 
         private Vector3 GetLeftPoint(Vector3 forwardVector, float width) {

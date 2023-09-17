@@ -6,7 +6,7 @@ using UnityEditor;
 using UnityEngine;
 
 [CustomEditor(typeof(ConveyorBelt))]
-public class ConveyorBeltEditor : Editor {
+public class ConveyorBeltEditor : UnityEditor.Editor {
 
     private ConveyorBelt conveyorBelt;
     private Path path;
